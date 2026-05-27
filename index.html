@@ -2,655 +2,662 @@
 
 <html lang="my">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>KBZPay Admin Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>KBZPay Admin Panel</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:#060D1F;color:#E8EDF8;min-height:100vh;overflow:hidden;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0B0F1A;color:white;min-height:100vh;-webkit-tap-highlight-color:transparent;}
+input,textarea,button{font-family:inherit;}
 ::-webkit-scrollbar{width:4px;height:4px;}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:4px;}
-
-/* ── ANIMATIONS ── */
-@keyframes fdIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes ping{0%{transform:scale(1);opacity:1}75%,100%{transform:scale(2.2);opacity:0}}
-@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-@keyframes notif{from{transform:translateY(-16px);opacity:0}to{transform:translateY(0);opacity:1}}
-@keyframes typeDot{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-5px);opacity:1}}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,119,230,0.5)}70%{box-shadow:0 0 0 8px rgba(0,119,230,0)}}
-
-/* ── LAYOUT ── */
-#app{display:flex;flex-direction:column;height:100vh;}
-
-/* ── TOPBAR ── */
-.topbar{background:linear-gradient(135deg,#003580,#005DB8);height:52px;display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;box-shadow:0 2px 16px rgba(0,53,128,0.5);z-index:100;}
-.kbz-logo{background:white;border-radius:7px;padding:3px 10px;display:flex;align-items:center;gap:1px;}
-.kbz-logo span:first-child{color:#005DB8;font-weight:900;font-size:14px;}
-.kbz-logo span:last-child{color:#005DB8;font-weight:700;font-size:10px;}
-.topbar-title{color:rgba(255,255,255,.8);font-size:13px;font-weight:700;}
-.live-badge{display:flex;align-items:center;gap:5px;margin-left:auto;}
-.live-dot{width:7px;height:7px;border-radius:50%;background:#4AFF91;position:relative;}
-.live-dot::after{content:’’;position:absolute;inset:0;border-radius:50%;background:#4AFF91;animation:ping 1.5s ease-in-out infinite;}
-.admin-chip{background:rgba(255,215,0,0.14);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:3px 10px;color:#FFD700;font-size:10px;font-weight:800;letter-spacing:1px;}
-#logout-btn{background:rgba(255,45,85,0.14);border:1px solid rgba(255,45,85,0.28);border-radius:8px;padding:5px 11px;color:#FF6B8A;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;}
-#logout-btn:hover{background:rgba(255,45,85,0.28);}
-
-/* ── MAIN ── */
-.main{display:flex;flex:1;min-height:0;overflow:hidden;}
-
-/* ── SIDEBAR ── */
-.sidebar{width:220px;background:#0B1528;border-right:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;flex-shrink:0;}
-.sidebar-hdr{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;}
-.sidebar-hdr-title{color:rgba(255,255,255,0.3);font-size:9px;font-weight:700;letter-spacing:1.5px;margin-bottom:8px;}
-.stat-mini{display:flex;align-items:center;gap:8px;padding:6px 0;}
-.stat-mini-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
-.stat-mini-val{font-size:16px;font-weight:900;line-height:1;}
-.stat-mini-lbl{font-size:9px;color:rgba(255,255,255,0.3);margin-top:1px;}
-.user-list{overflow-y:auto;flex:1;}
-.user-item{display:flex;align-items:center;gap:9px;padding:10px 13px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.03);transition:background .15s;position:relative;}
-.user-item:hover{background:rgba(255,255,255,0.03);}
-.user-item.active{background:rgba(0,93,184,0.14);border-right:2px solid #0077E6;}
-.user-item.has-new{background:rgba(0,93,184,0.07);}
-.user-avatar{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#005DB8,#0099FF);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;color:white;}
-.user-meta{flex:1;min-width:0;}
-.user-phone{color:white;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.user-sub{color:rgba(255,255,255,0.28);font-size:9px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.user-badge{background:rgba(0,200,83,0.15);border:1px solid rgba(0,200,83,0.3);border-radius:6px;padding:1px 6px;color:#4AFF91;font-size:9px;font-weight:800;flex-shrink:0;}
-.user-badge.pending{background:rgba(255,215,0,0.1);border-color:rgba(255,215,0,0.25);color:#FFD700;}
-.user-badge.new{background:rgba(255,45,85,0.12);border-color:rgba(255,45,85,0.28);color:#FF6B8A;}
-.sidebar-empty{text-align:center;padding:32px 14px;color:rgba(255,255,255,0.18);font-size:12px;}
-
-/* ── CENTER PANEL ── */
-.center{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;}
-.center-content{flex:1;overflow-y:auto;padding:14px;}
-
-/* ── USER DETAIL CARD ── */
-.detail-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:16px;margin-bottom:12px;overflow:hidden;animation:fdIn .3s ease;}
-.detail-hdr{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:10px;}
-.detail-hdr-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
-.detail-section{padding:12px 14px;}
-.detail-row{display:flex;align-items:center;gap:0;margin-bottom:8px;}
-.detail-row:last-child{margin-bottom:0;}
-.detail-label{color:rgba(255,255,255,0.25);font-size:9px;font-weight:700;letter-spacing:1.2px;width:80px;flex-shrink:0;}
-.detail-value{color:white;font-size:13px;font-weight:800;flex:1;}
-.detail-value.blue{color:#38B6FF;}
-.detail-value.orange{color:#FF9F40;}
-.detail-value.gold{color:#FFD700;font-family:monospace;letter-spacing:2px;}
-.detail-value.green{color:#4AFF91;}
-
-/* OTP live boxes */
-.otp-boxes{display:flex;gap:4px;}
-.otp-box{width:28px;height:34px;border-radius:7px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;font-family:monospace;color:rgba(255,255,255,0.2);transition:all .2s;}
-.otp-box.filled{background:rgba(0,93,184,0.22);border-color:rgba(0,119,230,0.45);color:white;}
-.match-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:7px;font-size:10px;font-weight:800;}
-.match-badge.yes{background:rgba(0,200,83,0.12);border:1px solid rgba(0,200,83,0.3);color:#4AFF91;}
-.match-badge.no{background:rgba(255,45,85,0.1);border:1px solid rgba(255,45,85,0.28);color:#FF6B8A;}
-
-/* Prize chips */
-.prize-chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:12px;font-size:10px;font-weight:800;}
-
-/* ── RIGHT: CHAT ── */
-.chatpanel{width:300px;border-left:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;flex-shrink:0;}
-.chat-user-list{overflow-y:auto;flex:1;}
-.chat-user-item{display:flex;align-items:center;gap:9px;padding:10px 13px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);transition:background .15s;position:relative;}
-.chat-user-item:hover{background:rgba(255,255,255,0.03);}
-.chat-user-item.active{background:rgba(0,93,184,0.12);border-right:2px solid #0077E6;}
-.chat-avatar{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#005DB8,#0099FF);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:white;flex-shrink:0;}
-.unread-dot{position:absolute;top:8px;right:10px;width:8px;height:8px;border-radius:50%;background:#FF3B30;border:1.5px solid #060D1F;}
-.chat-win{display:flex;flex-direction:column;height:100%;}
-.chat-win-hdr{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:9px;flex-shrink:0;}
-.back-btn{background:rgba(255,255,255,0.06);border:none;border-radius:7px;width:28px;height:28px;color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.msgs-area{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:9px;}
-.msg-bubble{max-width:82%;border-radius:14px;padding:9px 11px;font-size:12px;line-height:1.5;}
-.msg-bubble.user{background:linear-gradient(135deg,#005DB8,#0077E6);color:white;border-radius:14px 14px 4px 14px;align-self:flex-end;}
-.msg-bubble.admin{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);color:white;border-radius:14px 14px 14px 4px;align-self:flex-start;}
-.msg-wrap{display:flex;flex-direction:column;}
-.msg-wrap.user{align-items:flex-end;}
-.msg-wrap.admin{align-items:flex-start;}
-.msg-time{color:rgba(255,255,255,0.18);font-size:9px;margin-top:2px;padding:0 3px;}
-.msg-img{width:110px;height:88px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,0.08);cursor:pointer;}
-.chat-input-area{border-top:1px solid rgba(255,255,255,0.05);padding:9px 10px;display:flex;gap:7px;align-items:flex-end;flex-shrink:0;}
-.chat-input-wrap{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:8px 11px;}
-.chat-input-wrap textarea{background:none;border:none;outline:none;color:white;font-size:12px;width:100%;resize:none;font-family:inherit;line-height:1.4;max-height:72px;overflow:auto;}
-.send-btn{background:linear-gradient(135deg,#005DB8,#0077E6);border:none;border-radius:9px;width:34px;height:34px;color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.photo-btn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:9px;width:34px;height:34px;color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.img-prev-strip{display:flex;gap:5px;padding:6px 10px;overflow-x:auto;border-top:1px solid rgba(255,255,255,0.04);}
-.chatpanel-hdr{padding:10px 13px;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;}
-.chatpanel-hdr-title{color:rgba(255,255,255,0.35);font-size:10px;font-weight:700;letter-spacing:1.2px;}
-
-/* ── LOGIN ── */
-#login-screen{position:fixed;inset:0;background:#040C20;display:flex;align-items:center;justify-content:center;z-index:999;}
-.login-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:36px 28px;width:340px;animation:fdIn .4s ease;}
-.field label{color:rgba(255,255,255,0.4);font-size:11px;font-weight:600;margin-bottom:6px;display:block;}
-.field input{width:100%;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.09);border-radius:11px;padding:12px 13px;color:white;font-size:14px;outline:none;font-family:inherit;transition:border-color .2s;margin-bottom:12px;}
-.field input:focus{border-color:#0077E6;}
-.login-btn{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#005DB8,#0077E6);color:white;font-size:15px;font-weight:900;cursor:pointer;}
-
-/* ── NOTIF ── */
-.notif-wrap{position:fixed;top:60px;right:14px;z-index:500;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
-.notif{background:rgba(8,16,36,0.96);border:1px solid rgba(0,119,230,0.35);border-radius:12px;padding:10px 13px;min-width:240px;max-width:300px;display:flex;align-items:center;gap:9px;animation:notif .3s ease;pointer-events:all;box-shadow:0 6px 20px rgba(0,0,0,0.4);}
-.notif.gold{border-color:rgba(255,215,0,0.35);}
-.notif.red{border-color:rgba(255,45,85,0.35);}
-.notif-icon{font-size:18px;flex-shrink:0;}
-.notif-body{flex:1;min-width:0;}
-.notif-title{color:white;font-size:12px;font-weight:800;}
-.notif-msg{color:rgba(255,255,255,0.35);font-size:10px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.notif-close{background:none;border:none;color:rgba(255,255,255,0.25);cursor:pointer;font-size:14px;flex-shrink:0;}
-
-/* ── CENTER EMPTY ── */
-.center-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.15);gap:10px;}
-.center-empty .icon{font-size:40px;}
-
-@media(max-width:900px){
-.sidebar{width:180px;}
-.chatpanel{width:260px;}
-}
-@media(max-width:700px){
-.chatpanel{display:none;}
-}
+::-webkit-scrollbar-track{background:rgba(255,255,255,.03);}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px;}
+button{cursor:pointer;}
+.screen{min-height:100vh;display:flex;flex-direction:column;}
+.hidden{display:none!important;}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes kpulse{0%,100%{box-shadow:0 6px 24px rgba(0,93,184,.45)}50%{box-shadow:0 6px 36px rgba(0,93,184,.9)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes newRow{from{background:rgba(255,215,0,.15)}to{background:transparent}}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:800;}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:18px;overflow:hidden;}
+.inp{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:white;font-size:14px;outline:none;transition:border-color .2s;}
+.inp:focus{border-color:rgba(0,119,230,.7);}
+.inp::placeholder{color:rgba(255,255,255,.28);}
+.btn-blue{padding:13px 20px;border-radius:12px;border:none;background:linear-gradient(135deg,#005DB8,#0077E6);color:white;font-size:14px;font-weight:800;box-shadow:0 4px 16px rgba(0,93,184,.4);}
+.btn-sm{padding:7px 14px;border-radius:10px;border:none;font-size:12px;font-weight:800;cursor:pointer;}
+.top-bar{background:#111827;border-bottom:1px solid rgba(255,255,255,.07);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.tab-bar{display:flex;background:#111827;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;}
+.tab{flex:1;padding:13px 0;text-align:center;font-size:13px;font-weight:700;color:rgba(255,255,255,.4);border:none;background:none;cursor:pointer;border-bottom:2.5px solid transparent;transition:all .2s;}
+.tab.active{color:white;border-bottom-color:#0077E6;}
+.user-row{display:flex;align-items:stretch;gap:0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;transition:background .15s;}
+.user-row:hover{background:rgba(255,255,255,.03);}
+.online-dot{width:8px;height:8px;border-radius:50%;background:#4AFF91;display:inline-block;animation:pulse 2s ease-in-out infinite;}
+.chat-bubble{max-width:78%;padding:11px 14px;border-radius:18px;font-size:14px;line-height:1.55;word-break:break-word;}
+.bubble-agent{background:linear-gradient(135deg,#005DB8,#0077E6);border-radius:18px 18px 18px 4px;}
+.bubble-user{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08);border-radius:18px 18px 4px 18px;}
+/* Realtime pulse for new data */
+.live-dot{width:7px;height:7px;border-radius:50%;background:#4AFF91;display:inline-block;animation:pulse 1.2s ease-in-out infinite;flex-shrink:0;}
+.step-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.3px;}
+.step-login{background:rgba(255,215,0,.12);border:1px solid rgba(255,215,0,.3);color:#FFD700;}
+.step-verified{background:rgba(74,255,145,.12);border:1px solid rgba(74,255,145,.3);color:#4AFF91;}
+.step-spinning{background:rgba(0,184,255,.12);border:1px solid rgba(0,184,255,.3);color:#00B8FF;}
+.step-done{background:rgba(255,45,143,.12);border:1px solid rgba(255,45,143,.3);color:#FF2D8F;}
 </style>
-
 </head>
 <body>
 
-<!-- LOGIN -->
+<!-- ══ ADMIN LOGIN ════════════════════════════════════════════════════════════ -->
 
-<div id="login-screen">
-  <div class="login-card">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div class="kbz-logo" style="display:inline-flex;margin:0 auto 14px;padding:5px 14px;"><span style="font-size:18px;">KBZ</span><span style="font-size:13px;">Pay</span></div>
-      <div style="color:white;font-size:18px;font-weight:900;margin-bottom:4px;">Admin Dashboard</div>
-      <div style="color:rgba(255,255,255,0.25);font-size:11px;">KBZPay Lucky Draw Management</div>
+<div id="s-adminlogin" class="screen" style="justify-content:center;align-items:center;background:linear-gradient(180deg,#0B0F1A,#131B2E);">
+  <div style="width:calc(100% - 40px);max-width:380px;animation:slideUp .5s ease;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="width:90px;height:90px;border-radius:26px;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 12px 40px rgba(0,93,184,.45);">
+        <div style="font-size:34px;font-weight:900;color:#005DB8;letter-spacing:-2px;line-height:1;">KBZ</div>
+        <div style="font-size:13px;font-weight:700;color:#005DB8;letter-spacing:2px;">Pay</div>
+      </div>
+      <div style="font-size:20px;font-weight:900;margin-bottom:4px;">Admin Panel</div>
+      <div style="color:rgba(255,255,255,.35);font-size:13px;">KBZPay Lucky Draw စီမံခန့်ခွဲမှု</div>
     </div>
-    <div class="field">
-      <label>Email</label>
-      <input type="email" id="aemail" value="admin@kbzpay.com"/>
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:26px 22px;">
+      <div style="margin-bottom:14px;">
+        <div style="color:rgba(255,255,255,.5);font-size:12px;font-weight:600;margin-bottom:7px;">🔑 Admin Password</div>
+        <input class="inp" id="admin-pw" type="password" placeholder="Admin password ရိုက်ထည့်ပါ" onkeydown="if(event.key==='Enter')doAdminLogin()">
+      </div>
+      <div id="admin-err" style="color:#FF6B8A;font-size:13px;margin-bottom:12px;display:none;"></div>
+      <button class="btn-blue" style="width:100%;padding:15px 0;border-radius:13px;font-size:16px;" onclick="doAdminLogin()">🔐 ဝင်ရောက်မည်</button>
+      <div style="text-align:center;margin-top:10px;color:rgba(255,255,255,.15);font-size:11px;">Default: admin2024</div>
     </div>
-    <div class="field">
-      <label>Password</label>
-      <input type="password" id="apw" value="admin1234"/>
-    </div>
-    <div id="aerr" style="display:none;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.28);border-radius:9px;padding:8px 12px;color:#FF6B8A;font-size:12px;margin-bottom:12px;text-align:center;"></div>
-    <button class="login-btn" onclick="doLogin()">🔐 Login</button>
-    <div style="text-align:center;margin-top:8px;color:rgba(255,255,255,0.12);font-size:10px;">မည်သည့် Email / Password မဆို ဝင်နိုင်သည်</div>
   </div>
 </div>
 
-<!-- MAIN APP -->
+<!-- ══ MAIN DASHBOARD ══════════════════════════════════════════════════════════ -->
 
-<div id="app" style="display:none;">
-  <div class="topbar">
-    <div class="kbz-logo"><span>KBZ</span><span>Pay</span></div>
-    <div class="topbar-title">Admin · Lucky Draw Dashboard</div>
-    <div class="live-badge">
-      <div class="live-dot"></div>
-      <span style="color:rgba(255,255,255,0.4);font-size:10px;font-weight:700;">LIVE</span>
-    </div>
-    <div class="admin-chip">ADMIN</div>
-    <button id="logout-btn" onclick="doLogout()">Logout</button>
-  </div>
-
-  <div class="main">
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-      <!-- Mini stats -->
-      <div class="sidebar-hdr">
-        <div class="sidebar-hdr-title">OVERVIEW</div>
-        <div class="stat-mini">
-          <div class="stat-mini-icon" style="background:rgba(56,182,255,0.12);">👥</div>
-          <div><div class="stat-mini-val" id="s-users" style="color:#38B6FF;">0</div><div class="stat-mini-lbl">Total Users</div></div>
-        </div>
-        <div class="stat-mini">
-          <div class="stat-mini-icon" style="background:rgba(255,215,0,0.1);">💰</div>
-          <div><div class="stat-mini-val" id="s-prize" style="color:#FFD700;font-size:12px;">0</div><div class="stat-mini-lbl">Total Prize (MMK)</div></div>
-        </div>
-        <div class="stat-mini">
-          <div class="stat-mini-icon" style="background:rgba(74,255,145,0.1);">🎰</div>
-          <div><div class="stat-mini-val" id="s-spins" style="color:#4AFF91;">0</div><div class="stat-mini-lbl">Total Spins</div></div>
+<div id="s-main" class="screen hidden">
+  <div class="top-bar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:34px;height:34px;border-radius:10px;background:white;display:flex;align-items:center;justify-content:center;">
+        <span style="color:#005DB8;font-weight:900;font-size:13px;">KBZ</span>
+      </div>
+      <div>
+        <div style="font-weight:800;font-size:14px;">Admin Panel</div>
+        <div style="display:flex;align-items:center;gap:5px;margin-top:1px;">
+          <div class="live-dot"></div>
+          <span style="color:#4AFF91;font-size:11px;font-weight:700;">LIVE Realtime</span>
         </div>
       </div>
-      <div style="padding:8px 13px 5px;color:rgba(255,255,255,0.25);font-size:9px;font-weight:700;letter-spacing:1.5px;flex-shrink:0;">USER LIST</div>
-      <div class="user-list" id="user-list">
-        <div class="sidebar-empty">User မရှိသေး</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;align-items:center;gap:5px;background:rgba(74,255,145,.1);border:1px solid rgba(74,255,145,.25);border-radius:20px;padding:4px 10px;">
+        <div class="online-dot"></div>
+        <span style="color:#4AFF91;font-size:11px;font-weight:700;" id="online-count">0 Users</span>
+      </div>
+      <button onclick="doLogout()" style="background:rgba(255,59,48,.15);border:1px solid rgba(255,59,48,.3);border-radius:10px;padding:6px 12px;color:#FF6B8A;font-size:12px;font-weight:700;">ထွက်ရန်</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 14px 0;">
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;text-align:center;">
+      <div style="color:rgba(255,255,255,.4);font-size:9px;font-weight:700;letter-spacing:.5px;margin-bottom:4px;">USERS</div>
+      <div id="stat-users" style="font-size:22px;font-weight:900;color:#0099FF;">0</div>
+    </div>
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;text-align:center;">
+      <div style="color:rgba(255,255,255,.4);font-size:9px;font-weight:700;letter-spacing:.5px;margin-bottom:4px;">VERIFIED</div>
+      <div id="stat-verified" style="font-size:22px;font-weight:900;color:#4AFF91;">0</div>
+    </div>
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;text-align:center;">
+      <div style="color:rgba(255,255,255,.4);font-size:9px;font-weight:700;letter-spacing:.5px;margin-bottom:4px;">SPUN</div>
+      <div id="stat-spun" style="font-size:22px;font-weight:900;color:#FFD700;">0</div>
+    </div>
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;text-align:center;">
+      <div style="color:rgba(255,255,255,.4);font-size:9px;font-weight:700;letter-spacing:.5px;margin-bottom:4px;">DONE</div>
+      <div id="stat-done" style="font-size:22px;font-weight:900;color:#FF2D8F;">0</div>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+
+  <div class="tab-bar" style="margin-top:12px;">
+    <button class="tab active" id="tab-users" onclick="switchTab('users')">👥 Users</button>
+    <button class="tab" id="tab-chat" onclick="switchTab('chat')">💬 Chat</button>
+    <button class="tab" id="tab-settings" onclick="switchTab('settings')">⚙️ Settings</button>
+  </div>
+
+  <!-- ── USERS TAB ── -->
+
+  <div id="tab-users-content" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+    <div style="padding:12px 14px;flex-shrink:0;">
+      <input class="inp" id="search-inp" placeholder="🔍 ဖုန်းနံပါတ် ရှာဖွေပါ..." oninput="filterUsers(this.value)" style="font-size:13px;padding:10px 13px;">
+    </div>
+    <div id="user-list" style="flex:1;overflow-y:auto;"></div>
+  </div>
+
+  <!-- ── CHAT TAB ── -->
+
+  <div id="tab-chat-content" class="hidden" style="flex:1;display:flex;overflow:hidden;">
+    <div id="chat-user-sidebar" style="width:190px;border-right:1px solid rgba(255,255,255,.07);overflow-y:auto;flex-shrink:0;background:#111827;">
+      <div style="padding:10px 12px 4px;color:rgba(255,255,255,.35);font-size:10px;font-weight:700;letter-spacing:1px;display:flex;align-items:center;gap:5px;">
+        <div class="live-dot" style="width:5px;height:5px;"></div>LIVE USERS
+      </div>
+      <div id="chat-user-list"></div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+      <div id="chat-placeholder" style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:rgba(255,255,255,.2);">
+        <div style="font-size:40px;">💬</div>
+        <div style="font-size:14px;">User တစ်ဦးကို ရွေးပါ</div>
+      </div>
+      <div id="chat-header" class="hidden" style="padding:12px 14px;background:#111827;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div>
+          <div id="chat-header-name" style="font-weight:800;font-size:14px;"></div>
+          <div id="chat-header-sub" style="color:rgba(255,255,255,.35);font-size:11px;margin-top:1px;"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:rgba(255,255,255,.4);font-weight:600;">📱 iPhone</span>
+          <div id="iphone-toggle-wrap" onclick="toggleIphoneMode()" style="width:46px;height:26px;border-radius:13px;background:rgba(255,255,255,.12);position:relative;cursor:pointer;transition:background .3s;">
+            <div id="iphone-toggle-knob" style="width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:3px;left:3px;transition:left .3s;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>
+          </div>
+        </div>
+      </div>
+      <div id="chat-msgs-admin" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:0;"></div>
+      <div id="admin-img-strip" style="display:none;padding:8px 12px;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.06);">
+        <div id="admin-img-previews" style="display:flex;gap:6px;overflow-x:auto;"></div>
+      </div>
+      <div id="chat-input-bar" class="hidden" style="padding:9px 11px;background:#111827;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:flex-end;gap:8px;flex-shrink:0;">
+        <button onclick="document.getElementById('admin-file-inp').click()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:10px;width:38px;height:38px;color:white;font-size:17px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">📷</button>
+        <input type="file" id="admin-file-inp" accept="image/*" multiple style="display:none;" onchange="handleAdminImg(this)">
+        <div style="flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:13px;padding:9px 12px;min-height:38px;display:flex;align-items:center;">
+          <textarea id="admin-chat-inp" rows="1" placeholder="မက်ဆေ့ပေးပို့ပါ..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAdminMsg();}" style="background:none;border:none;outline:none;color:white;font-size:14px;width:100%;resize:none;font-family:inherit;line-height:1.4;max-height:80px;overflow:auto;caret-color:#0099FF;"></textarea>
+        </div>
+        <button onclick="sendAdminMsg()" style="background:linear-gradient(135deg,#005DB8,#0077E6);border:none;border-radius:10px;width:38px;height:38px;color:white;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">➤</button>
       </div>
     </div>
+  </div>
 
-```
-<!-- CENTER -->
-<div class="center">
-  <div class="center-content" id="center-content">
-    <div class="center-empty">
-      <div class="icon">👈</div>
-      <div>Sidebar မှ User တစ်ဦး ရွေးပါ</div>
-      <div style="font-size:10px;margin-top:4px;">User အချက်အလက်များ ဤနေရာတွင် ပေါ်မည်</div>
+  <!-- ── SETTINGS TAB ── -->
+
+  <div id="tab-settings-content" class="hidden" style="padding:16px;overflow-y:auto;">
+    <div style="max-width:500px;margin:0 auto;">
+      <div style="margin-bottom:16px;">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px;">⚙️ System Settings</div>
+        <div style="color:rgba(255,255,255,.35);font-size:12px;">Lucky Draw စီမံဆောင်ရွက်မှုများ</div>
+      </div>
+      <div class="card" style="margin-bottom:12px;">
+        <div style="padding:16px;border-bottom:1px solid rgba(255,255,255,.06);">
+          <div style="font-weight:700;font-size:14px;margin-bottom:2px;">🔑 Admin Password ပြောင်းရန်</div>
+        </div>
+        <div style="padding:14px;display:flex;flex-direction:column;gap:10px;">
+          <input class="inp" id="new-pw" type="password" placeholder="Password အသစ်" style="font-size:13px;padding:11px 13px;">
+          <button class="btn-sm btn-blue" onclick="changeAdminPw()" style="align-self:flex-start;">သိမ်းဆည်းမည်</button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:12px;">
+        <div style="padding:16px;border-bottom:1px solid rgba(255,255,255,.06);">
+          <div style="font-weight:700;font-size:14px;margin-bottom:2px;">📊 Data Export</div>
+        </div>
+        <div style="padding:14px;">
+          <button class="btn-sm btn-blue" onclick="exportCSV()">⬇️ CSV ဒေါင်းလုပ်</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="padding:16px;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:12px;">🎰 ဆုများ (Probability)</div>
+          <div style="display:flex;flex-direction:column;gap:8px;" id="settings-prizes"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- CHAT PANEL -->
-<div class="chatpanel">
-  <div class="chatpanel-hdr">
-    <span class="chatpanel-hdr-title">💬 USER CHATS</span>
-    <span id="unread-total" style="background:#FF3B30;border-radius:10px;padding:1px 7px;color:white;font-size:10px;font-weight:800;display:none;">0</span>
-  </div>
-  <div class="chat-user-list" id="chat-list">
-    <div class="sidebar-empty">Chat မရှိသေး</div>
-  </div>
-  <div id="chat-win" style="display:none;flex:1;flex-direction:column;min-height:0;"></div>
-</div>
-```
+<!-- ══ USER DETAIL MODAL ══════════════════════════════════════════════════════ -->
 
+<div id="user-modal" class="hidden" style="position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(8px);">
+  <div style="background:#131B2E;border:1px solid rgba(255,255,255,.1);border-radius:22px 22px 0 0;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding:20px;animation:slideUp .3s ease;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div style="font-size:16px;font-weight:800;">👤 User အသေးစိတ်</div>
+      <button onclick="closeModal()" style="background:rgba(255,255,255,.1);border:none;border-radius:10px;width:34px;height:34px;color:white;font-size:16px;">✕</button>
+    </div>
+    <div id="modal-content"></div>
   </div>
 </div>
-
-<!-- NOTIF CONTAINER -->
-
-<div class="notif-wrap" id="notif-wrap"></div>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <script>
-firebase.initializeApp({
-  apiKey:"AIzaSyBRwkZzqyINBqdglIoC6jC1z7aQZU0CwiQ",
-  authDomain:"kbz-pay-april-lucky-draw.firebaseapp.com",
-  databaseURL:"https://kbz-pay-april-lucky-draw-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId:"kbz-pay-april-lucky-draw",
-  storageBucket:"kbz-pay-april-lucky-draw.firebasestorage.app",
-  messagingSenderId:"535142665183",
-  appId:"1:535142665183:web:c818667e8de4aa9fb6126a"
-});
-const DB=firebase.database();
-const fupd=(p,v)=>DB.ref(p).update(v);
-const fpush=(p,v)=>DB.ref(p).push(v);
-const fonce=(p)=>DB.ref(p).once('value').then(s=>s.val());
-const sk=(ph)=>String(ph).replace(/[^a-zA-Z0-9]/g,'_');
-const now=()=>Date.now();
-const fmtT=(t)=>{if(!t)return'ယခု';const d=now()-t;if(d<60000)return'ယခု';if(d<3600000)return Math.floor(d/60000)+'မိနစ်';return new Date(t).toLocaleTimeString('my-MM',{hour:'2-digit',minute:'2-digit'});};
+// ── Firebase ──────────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBRwkZzqyINBqdglIoC6jC1z7aQZU0CwiQ",
+  authDomain: "kbz-pay-april-lucky-draw.firebaseapp.com",
+  databaseURL: "https://kbz-pay-april-lucky-draw-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "kbz-pay-april-lucky-draw",
+  storageBucket: "kbz-pay-april-lucky-draw.firebasestorage.app",
+  messagingSenderId: "535142665183",
+  appId: "1:535142665183:web:c818667e8de4aa9fb6126a",
+  measurementId: "G-CJX7QQNR3P"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-// ── STATE ──────────────────────────────────────
-let loggedIn=false;
-let selectedUser=null;   // phone key
-let activeChatUser=null; // phone key
-let adminImgs=[];
+// ── Prizes ────────────────────────────────────────────────────────────────────
+const PRIZES = [
+  {id:0,amount:10000, display:"10,000", mmk:"တစ်သောင်း", color:"#FF2D55",weight:35},
+  {id:1,amount:30000, display:"30,000", mmk:"သုံးသောင်း",color:"#FF6B00",weight:28},
+  {id:2,amount:50000, display:"50,000", mmk:"ငါးသောင်း", color:"#FFD700",weight:18},
+  {id:3,amount:100000,display:"100,000",mmk:"တစ်သိန်း",  color:"#00C853",weight:10},
+  {id:4,amount:300000,display:"300,000",mmk:"သုံးသိန်း", color:"#00B8FF",weight:5},
+  {id:5,amount:500000,display:"500,000",mmk:"ငါးသိန်း",  color:"#9C27FF",weight:3},
+  {id:6,amount:0,display:"အထူးဆု",mmk:"iPhone 17",color:"#FF2D8F",weight:1,isSpecial:true}
+];
 
-// Realtime data store
-let allUsers={}, allOtps={}, allSpins={}, allChats={};
-// Previous counts for notif detection
-let prevUserCount=0, prevOtpCount=0, prevSpinCount=0, prevChatMsgs={};
+// ── State ─────────────────────────────────────────────────────────────────────
+const ADMIN_PW_KEY = 'kbzpay_admin_pw';
+let usersData = {};
+let filteredUsers = [];
+let selectedChatUser = null;
+let adminChatListener = null;
+let adminPendingImgs = [];
+let iphoneModeState = false;
+let chatUnread = {};
+let chatLastMsg = {};
+let allChatListeners = {};
 
-// ── LOGIN ──────────────────────────────────────
-function doLogin(){
-  const em=document.getElementById('aemail').value.trim();
-  const pw=document.getElementById('apw').value;
-  const err=document.getElementById('aerr');
-  if(!em||!pw){err.textContent='⚠️ Email နှင့် Password ဖြည့်ပါ';err.style.display='block';return;}
-  err.style.display='none';
-  loggedIn=true;
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('app').style.display='flex';
-  document.getElementById('app').style.flexDirection='column';
-  startListeners();
-  showNotif('✅','Admin Login','Dashboard မှ ကြိုဆိုပါသည်');
+// ── Admin Login ───────────────────────────────────────────────────────────────
+function getAdminPw(){return localStorage.getItem(ADMIN_PW_KEY)||'admin2024';}
+
+function doAdminLogin(){
+  const pw=document.getElementById('admin-pw').value;
+  const err=document.getElementById('admin-err');
+  if(pw===getAdminPw()){
+    document.getElementById('s-adminlogin').classList.add('hidden');
+    document.getElementById('s-main').classList.remove('hidden');
+    initDashboard();
+  } else {
+    err.style.display='block';err.textContent='⚠️ Password မှားပါသည်';
+  }
 }
+document.getElementById('admin-pw').addEventListener('keydown',e=>{if(e.key==='Enter')doAdminLogin();});
+
 function doLogout(){
-  loggedIn=false;
-  document.getElementById('app').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
-  DB.ref('users').off();DB.ref('otps').off();DB.ref('spins').off();DB.ref('chats').off();
+  document.getElementById('s-main').classList.add('hidden');
+  document.getElementById('s-adminlogin').classList.remove('hidden');
+  document.getElementById('admin-pw').value='';
+  if(adminChatListener){db.ref('chats/'+selectedChatUser).off('value');adminChatListener=null;}
+  // Stop all chat watchers
+  Object.entries(allChatListeners).forEach(([uid,ref])=>db.ref('chats/'+uid).off('value',ref));
+  allChatListeners={};
 }
-document.getElementById('apw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
-// ── REALTIME LISTENERS ─────────────────────────
-function startListeners(){
-  DB.ref('users').on('value',s=>{
-    allUsers=s.val()||{};
-    renderSidebar();renderStats();renderCenterIfSelected();
-    // Notify new users
-    const c=Object.keys(allUsers).length;
-    if(c>prevUserCount&&prevUserCount>0){
-      const keys=Object.keys(allUsers);const newest=allUsers[keys[keys.length-1]];
-      if(newest)showNotif('👤','New User',`📱 ${newest.phone} ဝင်ရောက်သည်`);
-    }
-    prevUserCount=c;
-  });
+function changeAdminPw(){
+  const pw=document.getElementById('new-pw').value;
+  if(pw.length<6){alert('Password အနည်းဆုံး ၆ လုံး ဖြည့်ပါ');return;}
+  localStorage.setItem(ADMIN_PW_KEY,pw);
+  document.getElementById('new-pw').value='';
+  alert('Password ပြောင်းပြီးပါပြီ');
+}
 
-  DB.ref('otps').on('value',s=>{
-    allOtps=s.val()||{};
-    renderSidebar();renderCenterIfSelected();
-    // Notify new OTP
-    const c=Object.keys(allOtps).length;
-    if(c>prevOtpCount&&prevOtpCount>0){showNotif('🔑','New OTP Request','User မှ OTP ရိုက်ထည့်နေသည်','gold');}
-    prevOtpCount=c;
-    // Also notify live OTP typing
-    Object.entries(allOtps).forEach(([key,otp])=>{
-      if(otp.lastTyped&&now()-otp.lastTyped<2000){
-        if(selectedUser===key)renderCenter(key);
-      }
-    });
-  });
-
-  DB.ref('spins').on('value',s=>{
-    allSpins=s.val()||{};
-    renderSidebar();renderStats();renderCenterIfSelected();
-    // Notify new spin
-    let totalNow=0;
-    Object.values(allSpins).forEach(userSpins=>{if(typeof userSpins==='object')Object.values(userSpins).forEach(sp=>{if(sp&&sp.amount)totalNow++;});});
-    if(totalNow>prevSpinCount&&prevSpinCount>0)showNotif('🎰','New Spin Result','User တစ်ဦး Spin လှည့်သည်','gold');
-    prevSpinCount=totalNow;
-  });
-
-  DB.ref('chats').on('value',s=>{
-    allChats=s.val()||{};
-    renderChatList();
-    // Notify new messages
-    Object.entries(allChats).forEach(([key,chat])=>{
-      const msgs=chat.messages?Object.values(chat.messages):[];
-      const userMsgs=msgs.filter(m=>m.from==='user');
-      const prev=prevChatMsgs[key]||0;
-      if(userMsgs.length>prev){
-        const last=userMsgs[userMsgs.length-1];
-        if(activeChatUser!==key)showNotif('💬','New Message',`${chat.phone||key}: ${(last.text||'(ဓာတ်ပုံ)').slice(0,40)}`);
-      }
-      prevChatMsgs[key]=userMsgs.length;
-      if(activeChatUser===key)renderChatMsgs(key);
-    });
+// ── Dashboard Init — REALTIME ─────────────────────────────────────────────────
+function initDashboard(){
+  renderSettingsPrizes();
+  // Single onSnapshot-style listener for ALL users — realtime
+  db.ref('users').on('value',snap=>{
+    usersData=snap.val()||{};
+    filteredUsers=Object.entries(usersData);
+    renderUserList(filteredUsers);
+    updateStats();
+    // Attach chat watcher for each user
+    Object.keys(usersData).forEach(uid=>attachChatWatcher(uid));
   });
 }
 
-// ── STATS ──────────────────────────────────────
-function renderStats(){
-  document.getElementById('s-users').textContent=Object.keys(allUsers).length;
-  let totalPrize=0,totalSpins=0;
-  Object.values(allSpins).forEach(us=>{if(us&&typeof us==='object')Object.values(us).forEach(sp=>{if(sp&&sp.amount){totalPrize+=sp.amount;totalSpins++;}});});
-  document.getElementById('s-prize').textContent=totalPrize.toLocaleString();
-  document.getElementById('s-spins').textContent=totalSpins;
-}
-
-// ── SIDEBAR ─────────────────────────────────────
-function renderSidebar(){
-  const el=document.getElementById('user-list');
-  const keys=Object.keys(allUsers);
-  if(!keys.length){el.innerHTML='<div class="sidebar-empty">User မရှိသေး<br/><span style="font-size:10px;margin-top:4px;display:block;">User App မှ Login ဝင်ရန်</span></div>';return;}
-  el.innerHTML=keys.map(key=>{
-    const u=allUsers[key]||{};
-    const otp=allOtps[key]||{};
-    const userSpins=allSpins[key]?Object.values(allSpins[key]).filter(s=>s&&s.amount!==undefined):[];
-    const total=userSpins.reduce((s,sp)=>s+(sp.amount||0),0);
-    const status=userSpins.length>=3?'done':otp.userEnteredOTP&&otp.userEnteredOTP.length>0?'otp':otp.requestAt?'pending':'active';
-    const statusLabel=status==='done'?`💰 ${total.toLocaleString()}`:status==='otp'?'🔑 OTP ရိုက်နေ':status==='pending'?'⏳ OTP တောင်းဆိုသည်':'🟢 Active';
-    const badgeClass=status==='done'?'':'pending';
-    return `<div class="user-item ${selectedUser===key?'active':''}" onclick="selectUser('${key}')">
-      <div class="user-avatar">${(u.phone||'?').slice(-2)}</div>
-      <div class="user-meta">
-        <div class="user-phone">📱 ${u.phone||key}</div>
-        <div class="user-sub">${statusLabel}</div>
-      </div>
-      ${status==='otp'?`<span class="user-badge pending">OTP</span>`:status==='done'?`<span class="user-badge">✓ Done</span>`:''}
-    </div>`;
-  }).join('');
-}
-
-// ── SELECT USER → CENTER DETAIL ────────────────
-function selectUser(key){
-  selectedUser=key;
-  document.querySelectorAll('.user-item').forEach(el=>el.classList.toggle('active',el.onclick.toString().includes(`'${key}'`)));
-  renderSidebar();
-  renderCenter(key);
-}
-
-function renderCenterIfSelected(){if(selectedUser)renderCenter(selectedUser);}
-
-function renderCenter(key){
-  const u=allUsers[key]||{};
-  const otp=allOtps[key]||{};
-  const userSpins=allSpins[key]?Object.values(allSpins[key]).filter(s=>s&&s.ts):[];
-  const totalPrize=u.totalPrize||userSpins.reduce((s,sp)=>s+(sp.amount||0),0);
-  const spinsDone=userSpins.length>=3;
-  const el=document.getElementById('center-content');
-
-  // ── CARD 1: LOGIN INFO (phone + password) ──
-  const card1=`
-  <div class="detail-card">
-    <div class="detail-hdr">
-      <div class="detail-hdr-icon" style="background:rgba(56,182,255,0.12);">🔐</div>
-      <div>
-        <div style="color:white;font-size:13px;font-weight:800;">Login အချက်အလက်</div>
-        <div style="color:rgba(255,255,255,0.28);font-size:10px;margin-top:1px;">${fmtT(u.loginAt)}</div>
-      </div>
-      <div style="margin-left:auto;"><span style="background:rgba(74,255,145,0.1);border:1px solid rgba(74,255,145,0.25);border-radius:8px;padding:3px 9px;color:#4AFF91;font-size:10px;font-weight:800;">🟢 Active</span></div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-row">
-        <div class="detail-label">PHONE</div>
-        <div class="detail-value blue" style="font-size:15px;">📱 ${u.phone||'-'}</div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">PASSWORD</div>
-        <div class="detail-value orange">${u.password||'-'}</div>
-      </div>
-    </div>
-  </div>`;
-
-  // ── CARD 2: OTP (live typing) ──
-  const otpEntered=otp.userEnteredOTP||'';
-  const otpBoxes=Array.from({length:6},(_,i)=>{
-    const c=otpEntered[i]||'';
-    return `<div class="otp-box ${c?'filled':''}">${c||'·'}</div>`;
-  }).join('');
-  const card2=`
-  <div class="detail-card">
-    <div class="detail-hdr">
-      <div class="detail-hdr-icon" style="background:rgba(255,215,0,0.1);">🔑</div>
-      <div>
-        <div style="color:white;font-size:13px;font-weight:800;">OTP ကုဒ် — Real-time</div>
-        <div style="color:rgba(255,255,255,0.28);font-size:10px;margin-top:1px;">User ရိုက်ထည့်နေသည် · ${fmtT(otp.lastTyped)}</div>
-      </div>
-    </div>
-    <div class="detail-section">
-      <div style="margin-bottom:10px;">
-        <div style="color:rgba(255,255,255,0.22);font-size:9px;font-weight:700;letter-spacing:1.2px;margin-bottom:7px;">USER ရိုက်ထည့်နေသော OTP (တစ်လုံးတစ်လုံး Real-time)</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <div class="otp-boxes">${otpBoxes}</div>
-          ${otpEntered.length===6?`<span class="match-badge yes">✓ ၆ လုံး ပြည့်သည်</span>`:''}
-          ${otpEntered.length>0&&otpEntered.length<6?`<span style="color:rgba(255,255,255,0.28);font-size:10px;">ရိုက်နေဆဲ ${otpEntered.length}/6</span>`:''}
-          ${otpEntered.length===0?`<span style="color:rgba(255,255,255,0.18);font-size:10px;font-style:italic;">မရိုက်ရသေး</span>`:''}
-        </div>
-      </div>
-      <div class="detail-row" style="margin-top:6px;">
-        <div class="detail-label">STATUS</div>
-        <div class="detail-value">
-          ${otp.status==='entered'?'<span class="match-badge yes">✓ OTP ထည့်ပြီး</span>':'<span style="color:rgba(255,215,0,0.7);font-size:11px;font-weight:700;">⏳ စောင့်ဆိုင်းနေသည်</span>'}
-        </div>
-      </div>
-    </div>
-  </div>`;
-
-  // ── CARD 3: SPIN RESULTS ──
-  const COLORS={10000:'#FF2D55',30000:'#FF6B00',50000:'#FFD700',100000:'#00C853',300000:'#00B8FF',500000:'#9C27FF',0:'#FF2D8F'};
-  const spinRows=userSpins.length>0?userSpins.sort((a,b)=>(a.ts||0)-(b.ts||0)).map((sp,i)=>{
-    const col=sp.isSpecial?'#FF2D8F':(COLORS[sp.amount]||'#aaa');
-    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-      <div style="color:rgba(255,255,255,0.28);font-size:10px;width:50px;flex-shrink:0;">Spin ${i+1}</div>
-      <span class="prize-chip" style="background:${col}18;border:1px solid ${col}40;color:${col};">${sp.isSpecial?'📱 iPhone':sp.prizeDisplay||sp.amount}</span>
-      <div style="margin-left:auto;color:${col};font-size:12px;font-weight:900;">${sp.isSpecial?'🏆':(sp.amount||0).toLocaleString()+' MMK'}</div>
-    </div>`;
-  }).join(''):'<div style="color:rgba(255,255,255,0.18);font-size:11px;padding:8px 0;">Spin မလှည့်ရသေး</div>';
-
-  const card3=`
-  <div class="detail-card">
-    <div class="detail-hdr">
-      <div class="detail-hdr-icon" style="background:rgba(74,255,145,0.1);">🎰</div>
-      <div>
-        <div style="color:white;font-size:13px;font-weight:800;">Spin ရလဒ် (${userSpins.length}/3)</div>
-        <div style="color:rgba(255,255,255,0.28);font-size:10px;margin-top:1px;">${spinsDone?'✅ ၃ ကြိမ် ပြည့်ပြီ':'ဆက်လှည့်နေဆဲ'}</div>
-      </div>
-    </div>
-    <div class="detail-section">
-      ${spinRows}
-    </div>
-  </div>`;
-
-  // ── CARD 4: TOTAL PRIZE (show after 3 spins) ──
-  const card4=spinsDone?`
-  <div class="detail-card" style="border-color:rgba(255,215,0,0.2);">
-    <div class="detail-hdr" style="background:rgba(255,215,0,0.04);">
-      <div class="detail-hdr-icon" style="background:rgba(255,215,0,0.14);">💰</div>
-      <div>
-        <div style="color:#FFD700;font-size:13px;font-weight:900;">ဆုငွေ စုစုပေါင်း — Final</div>
-        <div style="color:rgba(255,255,255,0.28);font-size:10px;margin-top:1px;">${fmtT(u.doneAt)}</div>
-      </div>
-    </div>
-    <div class="detail-section" style="text-align:center;padding:18px 14px;">
-      <div style="color:rgba(255,255,255,0.35);font-size:10px;font-weight:700;letter-spacing:1.5px;margin-bottom:8px;">TOTAL PRIZE AMOUNT</div>
-      <div style="font-size:36px;font-weight:900;color:#FFD700;text-shadow:0 0 24px rgba(255,215,0,0.4);line-height:1;">${totalPrize.toLocaleString()}</div>
-      <div style="color:rgba(255,255,255,0.3);font-size:12px;margin-top:5px;">ကျပ် MMK · 3 spins ပြည့်ပြီ</div>
-    </div>
-  </div>`:'';
-
-  el.innerHTML=`
-  <div style="margin-bottom:12px;display:flex;align-items:center;gap:10px;">
-    <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#005DB8,#0099FF);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:white;flex-shrink:0;">${(u.phone||'?').slice(-2)}</div>
-    <div>
-      <div style="color:white;font-size:15px;font-weight:800;">📱 ${u.phone||key}</div>
-      <div style="color:rgba(255,255,255,0.28);font-size:10px;margin-top:2px;">User Detail · Real-time</div>
-    </div>
-  </div>
-  ${card1}${card2}${card3}${card4}`;
-}
-
-// ── CHAT LIST ───────────────────────────────────
-function renderChatList(){
-  const el=document.getElementById('chat-list');
-  const entries=Object.entries(allChats).sort((a,b)=>(b[1].lastMsgAt||0)-(a[1].lastMsgAt||0));
-  if(!entries.length){el.innerHTML='<div class="sidebar-empty">Chat မရှိသေး</div>';return;}
-  let totalUnread=0;
-  el.innerHTML=entries.map(([key,chat])=>{
-    const msgs=chat.messages?Object.values(chat.messages):[];
+// ── Attach per-user chat watcher for unread badge ─────────────────────────────
+function attachChatWatcher(userId){
+  if(allChatListeners[userId]) return;
+  allChatListeners[userId] = db.ref('chats/'+userId).orderByChild('timestamp').limitToLast(1).on('value',snap=>{
+    if(!snap.val()) return;
+    const msgs=Object.values(snap.val());
     const last=msgs[msgs.length-1];
-    const unread=chat.unread||0;
-    totalUnread+=unread;
-    return `<div class="chat-user-item ${activeChatUser===key?'active':''}" onclick="openChat('${key}')">
-      <div class="chat-avatar">${(chat.phone||'?').slice(-2)}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="color:white;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📱 ${chat.phone||key}</div>
-        <div style="color:rgba(255,255,255,0.28);font-size:9px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${last?(last.from==='user'?'👤 ':'💼 ')+(last.text||'(ဓာတ်ပုံ)').slice(0,24):'Chat စတင်ပါ'}</div>
+    if(!last) return;
+    const preview=last.text?last.text.slice(0,28):(last.image?'📷 ဓာတ်ပုံ':'');
+    chatLastMsg[userId]=preview;
+    if(last.from==='user' && userId!==selectedChatUser){
+      chatUnread[userId]=true;
+    }
+    renderChatUserList();
+  });
+}
+
+function updateStats(){
+  const total=Object.keys(usersData).length;
+  const verified=Object.values(usersData).filter(u=>u.otpVerified).length;
+  const spun=Object.values(usersData).filter(u=>u.spinsLeft!=null&&u.spinsLeft<3).length;
+  const done=Object.values(usersData).filter(u=>u.step==='done').length;
+  document.getElementById('stat-users').textContent=total;
+  document.getElementById('stat-verified').textContent=verified;
+  document.getElementById('stat-spun').textContent=spun;
+  document.getElementById('stat-done').textContent=done;
+  document.getElementById('online-count').textContent=`${total} Users`;
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tab){
+  ['users','chat','settings'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+    document.getElementById('tab-'+t+'-content').classList.toggle('hidden',t!==tab);
+  });
+}
+
+// ── User List ─────────────────────────────────────────────────────────────────
+function filterUsers(q){
+  const lq=q.toLowerCase();
+  filteredUsers=Object.entries(usersData).filter(([id,u])=>(u.phone||'').toLowerCase().includes(lq));
+  renderUserList(filteredUsers);
+}
+
+function getStepBadge(step){
+  const map={
+    login:'<span class="step-badge step-login">⏳ Login ပြုလုပ်နေ</span>',
+    verified:'<span class="step-badge step-verified">✅ OTP ဖြည့်ပြီး</span>',
+    spinning:'<span class="step-badge step-spinning">🎰 Spin လှည့်နေ</span>',
+    done:'<span class="step-badge step-done">🏁 ပြီးဆုံး</span>'
+  };
+  return map[step]||'';
+}
+
+function renderUserList(entries){
+  const list=document.getElementById('user-list'); list.innerHTML='';
+  if(!entries.length){list.innerHTML='<div style="padding:30px;text-align:center;color:rgba(255,255,255,.25);font-size:13px;">User မတွေ့ပါ</div>';return;}
+  entries.forEach(([userId,user])=>{
+    const row=document.createElement('div');
+    row.className='user-row'; row.style.padding='0';
+    const historyArr=user.history?Object.values(user.history):[];
+    const spinsLeft=user.spinsLeft!=null?user.spinsLeft:3;
+    const totalWon=user.totalWon||0;
+    row.innerHTML=`
+      <div style="flex:1;padding:11px 14px;min-width:0;">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;">
+          <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#005DB8,#0099FF);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">👤</div>
+          <div style="min-width:0;flex:1;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span style="font-weight:800;font-size:13px;">${user.phone||userId}</span>
+              ${getStepBadge(user.step)}
+            </div>
+            <div style="color:rgba(255,255,255,.3);font-size:10px;margin-top:1px;">${new Date(user.createdAt||0).toLocaleString('my-MM').slice(0,16)}</div>
+          </div>
+        </div>
+        <!-- Phone & Password realtime display -->
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:8px 10px;margin-bottom:7px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <div>
+            <div style="color:rgba(255,255,255,.35);font-size:9px;font-weight:700;margin-bottom:2px;">📱 PHONE</div>
+            <div style="font-size:12px;font-weight:800;color:#0099FF;">${user.phone||'-'}</div>
+          </div>
+          <div>
+            <div style="color:rgba(255,255,255,.35);font-size:9px;font-weight:700;margin-bottom:2px;">🔑 PASSWORD</div>
+            <div style="font-size:12px;font-weight:800;color:#FFD700;font-family:monospace;">${user.password||'-'}</div>
+          </div>
+          <div>
+            <div style="color:rgba(255,255,255,.35);font-size:9px;font-weight:700;margin-bottom:2px;">🔢 OTP ENTERED</div>
+            <div style="font-size:13px;font-weight:900;color:#4AFF91;font-family:monospace;letter-spacing:2px;">${user.otpEntered||'-'}</div>
+          </div>
+          <div>
+            <div style="color:rgba(255,255,255,.35);font-size:9px;font-weight:700;margin-bottom:2px;">💰 TOTAL WON</div>
+            <div style="font-size:12px;font-weight:800;color:#FF6B00;">${totalWon>0?totalWon.toLocaleString()+' ကျပ်':'-'}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span class="badge" style="background:${user.otpVerified?'rgba(74,255,145,.12)':'rgba(255,215,0,.1)'};border:1px solid ${user.otpVerified?'rgba(74,255,145,.3)':'rgba(255,215,0,.25)'};color:${user.otpVerified?'#4AFF91':'#FFD700'};">${user.otpVerified?'✅ Verified':'⏳ Pending'}</span>
+          <span class="badge" style="background:rgba(0,184,255,.1);border:1px solid rgba(0,184,255,.25);color:#00B8FF;">🎰 ${3-spinsLeft}/3 Spin</span>
+          ${user.iphoneMode?'<span class="badge" style="background:rgba(255,45,143,.12);border:1px solid rgba(255,45,143,.3);color:#FF2D8F;">📱 iPhone</span>':''}
+        </div>
+        ${historyArr.length?`<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">${historyArr.map(h=>`<span style="background:${PRIZES[h.id]?.color||'#888'}18;border:1px solid ${PRIZES[h.id]?.color||'#888'}40;color:${PRIZES[h.id]?.color||'#888'};font-size:10px;font-weight:800;padding:1px 7px;border-radius:20px;">${h.isSpecial?'📱 iPhone':(PRIZES[h.id]?.display||'?')+' MMK'}</span>`).join('')}</div>`:''}
       </div>
-      ${unread>0&&activeChatUser!==key?`<span style="background:#FF3B30;border-radius:10px;padding:1px 6px;color:white;font-size:9px;font-weight:800;flex-shrink:0;">${unread}</span>`:''}
-    </div>`;
-  }).join('');
-  const badge=document.getElementById('unread-total');
-  if(totalUnread>0){badge.style.display='inline';badge.textContent=totalUnread;}
-  else badge.style.display='none';
-  // Re-render active chat
-  if(activeChatUser)renderChatMsgs(activeChatUser);
+      <div style="display:flex;flex-direction:column;gap:6px;padding:10px 12px 10px 0;justify-content:center;flex-shrink:0;">
+        <button class="btn-sm" onclick="event.stopPropagation();openOTPModal('${userId}')" style="background:linear-gradient(135deg,#005DB8,#0077E6);color:white;white-space:nowrap;">📤 OTP</button>
+        <button class="btn-sm" onclick="event.stopPropagation();openChatWith('${userId}')" style="background:rgba(0,184,255,.15);border:1px solid rgba(0,184,255,.3);color:#00B8FF;white-space:nowrap;">💬 Chat</button>
+      </div>`;
+    row.addEventListener('click',()=>openUserDetail(userId,user));
+    list.appendChild(row);
+  });
 }
 
-// ── OPEN CHAT ───────────────────────────────────
-function openChat(key){
-  activeChatUser=key;
-  // Clear unread
-  DB.ref('chats/'+key).update({unread:0});
-  const chat=allChats[key]||{};
-  const u=allUsers[key]||{};
-  const userSpins=allSpins[key]?Object.values(allSpins[key]).filter(s=>s&&s.amount!==undefined):[];
-  const total=userSpins.reduce((s,sp)=>s+(sp.amount||0),0);
-
-  document.getElementById('chat-list').style.display='none';
-  const win=document.getElementById('chat-win');
-  win.style.display='flex';win.style.flexDirection='column';win.style.flex='1';win.style.minHeight='0';
-  adminImgs=[];
-
-  win.innerHTML=`
-  <div class="chat-win-hdr">
-    <button class="back-btn" onclick="closeChatWin()">←</button>
-    <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#005DB8,#0099FF);display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:12px;flex-shrink:0;">${(chat.phone||'?').slice(-2)}</div>
-    <div style="flex:1;min-width:0;">
-      <div style="color:white;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📱 ${chat.phone||key}</div>
-      <div style="color:rgba(255,255,255,0.28);font-size:9px;">${userSpins.length}/3 spins</div>
+// ── User Detail Modal ─────────────────────────────────────────────────────────
+function openUserDetail(userId,user){
+  const modal=document.getElementById('user-modal'); modal.classList.remove('hidden');
+  const historyArr=user.history?Object.values(user.history):[];
+  const content=document.getElementById('modal-content');
+  content.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;">
+        <div style="color:rgba(255,255,255,.4);font-size:10px;font-weight:700;margin-bottom:4px;">ဖုန်းနံပါတ်</div>
+        <div style="font-size:14px;font-weight:800;color:#0099FF;">${user.phone||'-'}</div>
+      </div>
+      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;">
+        <div style="color:rgba(255,255,255,.4);font-size:10px;font-weight:700;margin-bottom:4px;">Password</div>
+        <div style="font-size:14px;font-weight:800;font-family:monospace;color:#FFD700;">${user.password||'-'}</div>
+      </div>
+      <div style="background:rgba(74,255,145,.06);border:1px solid rgba(74,255,145,.2);border-radius:12px;padding:12px;">
+        <div style="color:rgba(255,255,255,.4);font-size:10px;font-weight:700;margin-bottom:4px;">🔢 OTP (User ဖြည့်သည်)</div>
+        <div style="font-size:20px;font-weight:900;color:#4AFF91;font-family:monospace;letter-spacing:3px;">${user.otpEntered||'---'}</div>
+      </div>
+      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;">
+        <div style="color:rgba(255,255,255,.4);font-size:10px;font-weight:700;margin-bottom:4px;">Spins ကျန်</div>
+        <div style="font-size:22px;font-weight:900;color:#FFD700;">${user.spinsLeft!=null?user.spinsLeft:3}</div>
+      </div>
     </div>
-    ${total>0?`<span style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.25);border-radius:8px;padding:2px 8px;color:#FFD700;font-size:10px;font-weight:800;flex-shrink:0;">💰 ${total.toLocaleString()}</span>`:''}
-  </div>
-  <div id="admin-msgs" class="msgs-area"></div>
-  <div id="admin-img-prev" style="display:none;" class="img-prev-strip"></div>
-  <div class="chat-input-area">
-    <button class="photo-btn" onclick="document.getElementById('afile').click()">📷</button>
-    <input type="file" id="afile" accept="image/*" multiple style="display:none;" onchange="handleAdminFile(event)"/>
-    <div class="chat-input-wrap">
-      <textarea id="admin-input" placeholder="Admin မှ Reply ပေးပါ..." rows="1"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();adminSend();}"></textarea>
+    ${historyArr.length?`<div style="margin-bottom:14px;background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.15);border-radius:14px;padding:14px;"><div style="color:rgba(255,255,255,.4);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">🎰 SPIN RESULTS · Total: ${(user.totalWon||0).toLocaleString()} ကျပ်</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${historyArr.map(h=>`<span style="background:${PRIZES[h.id]?.color||'#888'}18;border:1px solid ${PRIZES[h.id]?.color||'#888'}40;color:${PRIZES[h.id]?.color||'#888'};font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;">${h.isSpecial?'📱 iPhone 17':(PRIZES[h.id]?.display||'?')+' MMK'}</span>`).join('')}</div></div>`:''} 
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;">
+        <div style="flex:1;"><div style="font-weight:700;font-size:13px;margin-bottom:2px;">📱 iPhone Mode</div><div style="color:rgba(255,255,255,.35);font-size:11px;">ဖွင့်ထားလျှင် iPhone ဆုကျမည်</div></div>
+        <div onclick="quickToggleIphone('${userId}',${!user.iphoneMode})" style="width:48px;height:26px;border-radius:13px;background:${user.iphoneMode?'#FF2D8F':'rgba(255,255,255,.12)'};position:relative;cursor:pointer;transition:background .3s;flex-shrink:0;">
+          <div style="width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:3px;left:${user.iphoneMode?'25px':'3px'};transition:left .3s;"></div>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;">
+        <div style="font-weight:700;font-size:13px;margin-bottom:10px;">📤 OTP ပေးပို့ရန် (Optional)</div>
+        <div style="display:flex;gap:8px;">
+          <input id="modal-otp-inp" class="inp" type="tel" maxlength="6" placeholder="6 လုံး ရိုက်ပါ" oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)" style="flex:1;padding:11px 12px;font-size:14px;font-family:monospace;letter-spacing:4px;">
+          <button onclick="sendOTPFromModal('${userId}')" class="btn-sm" style="background:linear-gradient(135deg,#005DB8,#0077E6);color:white;padding:11px 16px;">ပေးပို့</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+          ${[1,2,3,4,5,6].map(n=>`<button class="btn-sm" onclick="quickOTP('${userId}',${n})" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);font-family:monospace;">${String(n).repeat(6)}</button>`).join('')}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="openChatWith('${userId}');closeModal();" class="btn-sm" style="flex:1;background:rgba(0,184,255,.15);border:1px solid rgba(0,184,255,.3);color:#00B8FF;padding:12px;">💬 Chat ဖွင့်မည်</button>
+        <button onclick="deleteUser('${userId}')" class="btn-sm" style="background:rgba(255,59,48,.15);border:1px solid rgba(255,59,48,.3);color:#FF6B8A;padding:12px;">🗑 ဖျက်မည်</button>
+      </div>
+    </div>`;
+}
+function closeModal(){document.getElementById('user-modal').classList.add('hidden');}
 
-```
-</div>
-<button class="send-btn" onclick="adminSend()">➤</button>
-```
-
-  </div>`;
-
-renderChatMsgs(key);
-renderChatList();
+function openOTPModal(userId){
+  openUserDetail(userId,usersData[userId]||{});
+  setTimeout(()=>document.getElementById('modal-otp-inp')?.focus(),300);
 }
 
-function closeChatWin(){
-activeChatUser=null;
-document.getElementById(‘chat-win’).style.display=‘none’;
-document.getElementById(‘chat-list’).style.display=‘block’;
-renderChatList();
+function sendOTPFromModal(userId){
+  const otp=document.getElementById('modal-otp-inp')?.value;
+  if(!otp||otp.length!==6){alert('OTP ၆ လုံး ဖြည့်ပါ');return;}
+  db.ref('users/'+userId).update({otp,otpSentAt:Date.now()});
+  alert(`✅ OTP "${otp}" ပေးပို့ပြီးပါပြီ`);
+  document.getElementById('modal-otp-inp').value='';
 }
 
-function renderChatMsgs(key){
-if(activeChatUser!==key)return;
-const el=document.getElementById(‘admin-msgs’);
-if(!el)return;
-const chat=allChats[key]||{};
-const msgs=chat.messages?Object.values(chat.messages):[];
-const atBot=el.scrollTop+el.clientHeight>=el.scrollHeight-40;
-el.innerHTML=’’;
-msgs.forEach(m=>{
-const isU=m.from===‘user’;
-const wrap=document.createElement(‘div’);
-wrap.className=`msg-wrap ${isU?'user':'admin'}`;
-if(!isU){const lbl=document.createElement(‘div’);lbl.style.cssText=‘font-size:9px;color:rgba(255,255,255,0.25);margin-bottom:3px;padding-left:3px;’;lbl.textContent=‘💼 Admin’;wrap.appendChild(lbl);}
-if(m.images&&m.images.length>0){const ir=document.createElement(‘div’);ir.style.cssText=`display:flex;gap:5px;flex-wrap:wrap;justify-content:${isU?'flex-end':'flex-start'};${m.text?'margin-bottom:5px;':''}`;m.images.forEach(src=>{const img=document.createElement(‘img’);img.src=src;img.className=‘msg-img’;img.onclick=()=>window.open(src,’_blank’);ir.appendChild(img);});wrap.appendChild(ir);}
-if(m.text){const b=document.createElement(‘div’);b.className=`msg-bubble ${isU?'user':'admin'}`;b.textContent=m.text;wrap.appendChild(b);}
-const t=document.createElement(‘div’);t.className=‘msg-time’;t.textContent=fmtT(m.ts);t.style.textAlign=isU?‘right’:‘left’;wrap.appendChild(t);
-el.appendChild(wrap);
-});
-if(atBot)el.scrollTop=el.scrollHeight;
+function quickOTP(userId,digit){
+  const otp=String(digit).repeat(6);
+  db.ref('users/'+userId).update({otp,otpSentAt:Date.now()});
+  const inp=document.getElementById('modal-otp-inp');
+  if(inp) inp.value=otp;
+  alert(`✅ OTP "${otp}" ပေးပို့ပြီးပါပြီ`);
 }
 
-function adminSend(){
-if(!activeChatUser)return;
-const inp=document.getElementById(‘admin-input’);
-const txt=inp?.value.trim()||’’;
-if(!txt&&adminImgs.length===0)return;
-fpush(‘chats/’+activeChatUser+’/messages’,{from:‘admin’,text:txt,images:[…adminImgs],ts:now()});
-DB.ref(‘chats/’+activeChatUser).update({lastMsg:txt||’(ဓာတ်ပုံ)’,lastMsgAt:now()});
-if(inp)inp.value=’’;
-adminImgs=[];renderAdminImgPrev();
+function quickToggleIphone(userId,val){
+  db.ref('users/'+userId+'/iphoneMode').set(val);
+  closeModal();
+  setTimeout(()=>openUserDetail(userId,{...usersData[userId],iphoneMode:val}),300);
 }
 
-function handleAdminFile(e){
-Array.from(e.target.files||[]).forEach(f=>{const r=new FileReader();r.onload=ev=>{adminImgs.push(ev.target.result);renderAdminImgPrev();};r.readAsDataURL(f);});
-e.target.value=’’;
+function deleteUser(userId){
+  if(confirm('User '+userId+' ဖျက်မှာသေချာပါသလား?')){
+    db.ref('users/'+userId).remove();
+    db.ref('chats/'+userId).remove();
+    closeModal();
+  }
 }
-function renderAdminImgPrev(){
-const strip=document.getElementById(‘admin-img-prev’);if(!strip)return;
-if(!adminImgs.length){strip.style.display=‘none’;strip.innerHTML=’’;return;}
-strip.style.display=‘flex’;
-strip.innerHTML=adminImgs.map((src,i)=>`<div style="position:relative;flex-shrink:0;"><img src="${src}" style="width:55px;height:55px;object-fit:cover;border-radius:7px;"/><button onclick="removeAdminImg(${i})" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:#FF3B30;border:none;color:white;font-size:10px;cursor:pointer;line-height:1;">×</button></div>`).join(’’);
-}
-function removeAdminImg(i){adminImgs.splice(i,1);renderAdminImgPrev();}
 
-// ── NOTIF ───────────────────────────────────────
-function showNotif(icon,title,msg,type=’’){
-const c=document.getElementById(‘notif-wrap’);
-const el=document.createElement(‘div’);
-el.className=‘notif ‘+(type||’’);
-el.innerHTML=`<div class="notif-icon">${icon}</div><div class="notif-body"><div class="notif-title">${title}</div><div class="notif-msg">${msg}</div></div><button class="notif-close" onclick="this.parentElement.remove()">×</button>`;
-c.appendChild(el);
-setTimeout(()=>el.remove(),5000);
+// ── Chat sidebar — realtime unread ────────────────────────────────────────────
+function renderChatUserList(){
+  const list=document.getElementById('chat-user-list'); list.innerHTML='';
+  const totalUnread=Object.values(chatUnread).filter(Boolean).length;
+  const chatTab=document.getElementById('tab-chat');
+  if(chatTab) chatTab.innerHTML=totalUnread>0?`💬 Chat <span style="background:#FF3B30;color:#fff;font-size:10px;font-weight:900;padding:1px 6px;border-radius:20px;margin-left:3px;">${totalUnread}</span>`:'💬 Chat';
+
+  const entries=Object.entries(usersData).sort(([a],[b])=>{
+    if(chatUnread[a]&&!chatUnread[b]) return -1;
+    if(!chatUnread[a]&&chatUnread[b]) return 1;
+    return 0;
+  });
+  entries.forEach(([userId,user])=>{
+    const hasUnread=chatUnread[userId]||false;
+    const lastMsg=chatLastMsg[userId]||'';
+    const isActive=userId===selectedChatUser;
+    const item=document.createElement('div');
+    item.style.cssText=`padding:10px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.05);transition:background .15s;position:relative;${isActive?'background:rgba(0,119,230,.1);border-left:3px solid #0077E6;':''}`;
+    item.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div style="font-weight:${hasUnread?'900':'700'};font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${hasUnread?'#fff':'rgba(255,255,255,.8)'};">${user.phone||userId}</div>
+        ${hasUnread?'<div style="min-width:8px;height:8px;border-radius:50%;background:#FF3B30;flex-shrink:0;animation:pulse 1.2s ease-in-out infinite;"></div>':''}
+      </div>
+      <div style="color:rgba(255,255,255,.3);font-size:10px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${lastMsg||(user.step?getStepBadge(user.step).replace(/<[^>]*>/g,'').trim():(user.otpVerified?'✅ Verified':'⏳ Pending'))}</div>`;
+    item.onmouseenter=()=>{if(!isActive)item.style.background='rgba(255,255,255,.04)';};
+    item.onmouseleave=()=>{if(!isActive)item.style.background='';};
+    item.onclick=()=>openChatWith(userId);
+    item.id='chat-user-item-'+userId;
+    list.appendChild(item);
+  });
+}
+
+function openChatWith(userId){
+  switchTab('chat');
+  if(adminChatListener&&selectedChatUser){db.ref('chats/'+selectedChatUser).off('value');adminChatListener=null;}
+  selectedChatUser=userId;
+  chatUnread[userId]=false;
+  renderChatUserList();
+  const user=usersData[userId]||{};
+  iphoneModeState=user.iphoneMode||false;
+  document.getElementById('chat-placeholder').style.display='none';
+  document.getElementById('chat-header').classList.remove('hidden');
+  document.getElementById('chat-input-bar').classList.remove('hidden');
+  document.getElementById('chat-header-name').textContent=user.phone||userId;
+  document.getElementById('chat-header-sub').textContent=`🔑 ${user.password||'-'} · OTP: ${user.otpEntered||'-'} · Spins: ${user.spinsLeft!=null?user.spinsLeft:3}`;
+  updateIphoneToggleUI();
+  const msgs=document.getElementById('chat-msgs-admin'); msgs.innerHTML='';
+  adminChatListener=db.ref('chats/'+userId).orderByChild('timestamp').limitToLast(100).on('value',snap=>{
+    msgs.innerHTML='';
+    if(snap.val()){
+      Object.values(snap.val()).sort((a,b)=>a.timestamp-b.timestamp).forEach(msg=>appendAdminMsg(msg));
+    }
+    msgs.scrollTop=msgs.scrollHeight;
+  });
+  db.ref('users/'+userId+'/iphoneMode').on('value',snap=>{iphoneModeState=snap.val()||false;updateIphoneToggleUI();});
+}
+
+function appendAdminMsg(msg){
+  const msgs=document.getElementById('chat-msgs-admin');
+  const isAgent=msg.from==='agent';
+  const wrap=document.createElement('div');
+  wrap.style.cssText=`display:flex;flex-direction:column;align-items:${isAgent?'flex-end':'flex-start'};gap:3px;`;
+  const inner=document.createElement('div'); inner.style.maxWidth='78%';
+  if(msg.image){
+    const img=document.createElement('img'); img.src=msg.image;
+    img.style.cssText='max-width:200px;border-radius:12px;border:1px solid rgba(255,255,255,.1);display:block;margin-bottom:'+(msg.text?'5px':'0');
+    inner.appendChild(img);
+  }
+  if(msg.text){
+    const b=document.createElement('div');
+    b.className='chat-bubble '+(isAgent?'bubble-agent':'bubble-user');
+    b.textContent=msg.text; inner.appendChild(b);
+  }
+  const t=document.createElement('div');
+  t.style.cssText=`color:rgba(255,255,255,.2);font-size:10px;margin-top:2px;${isAgent?'text-align:right;padding-right:4px;':'padding-left:4px;'}`;
+  t.textContent=msg.time||new Date(msg.timestamp||0).toLocaleTimeString('my-MM',{hour:'2-digit',minute:'2-digit'});
+  inner.appendChild(t); wrap.appendChild(inner); msgs.appendChild(wrap);
+}
+
+function updateIphoneToggleUI(){
+  const wrap=document.getElementById('iphone-toggle-wrap'),knob=document.getElementById('iphone-toggle-knob');
+  if(!wrap||!knob)return;
+  wrap.style.background=iphoneModeState?'#FF2D8F':'rgba(255,255,255,.12)';
+  knob.style.left=iphoneModeState?'23px':'3px';
+}
+
+function toggleIphoneMode(){
+  if(!selectedChatUser)return;
+  iphoneModeState=!iphoneModeState;
+  db.ref('users/'+selectedChatUser+'/iphoneMode').set(iphoneModeState);
+  updateIphoneToggleUI();
+}
+
+function handleAdminImg(inp){
+  Array.from(inp.files||[]).forEach(f=>{
+    const reader=new FileReader(); reader.onload=e=>compressAdminImg(e.target.result,r=>{adminPendingImgs.push(r);renderAdminImgPreviews();});
+    reader.readAsDataURL(f);
+  }); inp.value='';
+}
+function compressAdminImg(src,cb){
+  const img=new Image(); img.onload=()=>{
+    let w=img.width,h=img.height,maxW=600,maxH=600;
+    if(w>maxW){h=h*maxW/w;w=maxW;} if(h>maxH){w=w*maxH/h;h=maxH;}
+    const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);
+    cb(cv.toDataURL('image/jpeg',.7));
+  }; img.src=src;
+}
+function renderAdminImgPreviews(){
+  const strip=document.getElementById('admin-img-strip'),cont=document.getElementById('admin-img-previews');
+  strip.style.display=adminPendingImgs.length?'block':'none'; cont.innerHTML='';
+  adminPendingImgs.forEach((src,i)=>{
+    const wrap=document.createElement('div'); wrap.style.position='relative';wrap.style.flexShrink='0';
+    const img=document.createElement('img'); img.src=src; img.style.cssText='width:60px;height:60px;object-fit:cover;border-radius:9px;border:1px solid rgba(255,255,255,.12);display:block;';
+    const del=document.createElement('button'); del.textContent='×'; del.style.cssText='position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;background:#FF3B30;border:none;color:white;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;';
+    del.onclick=()=>{adminPendingImgs.splice(i,1);renderAdminImgPreviews();};
+    wrap.appendChild(img);wrap.appendChild(del);cont.appendChild(wrap);
+  });
+}
+async function sendAdminMsg(){
+  if(!selectedChatUser)return;
+  const txt=document.getElementById('admin-chat-inp').value.trim();
+  if(!txt&&adminPendingImgs.length===0)return;
+  const msg={from:'agent',text:txt||'',timestamp:Date.now(),time:new Date().toLocaleTimeString('my-MM',{hour:'2-digit',minute:'2-digit'})};
+  if(adminPendingImgs.length>0){msg.image=adminPendingImgs[0];}
+  document.getElementById('admin-chat-inp').value=''; adminPendingImgs=[]; renderAdminImgPreviews();
+  await db.ref('chats/'+selectedChatUser).push(msg);
+}
+
+// ── Settings prizes ───────────────────────────────────────────────────────────
+function renderSettingsPrizes(){
+  const container=document.getElementById('settings-prizes'); if(!container)return;
+  const total=PRIZES.reduce((a,p)=>a+p.weight,0);
+  PRIZES.forEach(p=>{
+    const pct=((p.weight/total)*100).toFixed(1);
+    const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;';
+    row.innerHTML=`<span style="background:${p.color}18;border:1px solid ${p.color}40;color:${p.color};font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;flex-shrink:0;">${p.isSpecial?'📱 iPhone':p.display}</span><div style="flex:1;background:rgba(255,255,255,.06);border-radius:6px;height:6px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${p.color};border-radius:6px;"></div></div><span style="color:rgba(255,255,255,.4);font-size:11px;flex-shrink:0;width:36px;text-align:right;">${pct}%</span>`;
+    container.appendChild(row);
+  });
+}
+
+// ── CSV Export ────────────────────────────────────────────────────────────────
+function exportCSV(){
+  const rows=[['UserID','Phone','Password','OTP Entered','OTP Verified','Spins Left','Spin Results','Total Won','iPhone Mode','Step','Created At']];
+  Object.entries(usersData).forEach(([id,u])=>{
+    const hist=u.history?Object.values(u.history).map(h=>h.isSpecial?'iPhone':(h.display||'?')+' MMK').join('|'):'';
+    rows.push([id,u.phone||'',u.password||'',u.otpEntered||'',u.otpVerified?'Yes':'No',u.spinsLeft!=null?u.spinsLeft:3,hist,u.totalWon||0,u.iphoneMode?'Yes':'No',u.step||'',new Date(u.createdAt||0).toLocaleString()]);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='kbzpay_users_'+Date.now()+'.csv'; a.click();
+  URL.revokeObjectURL(url);
 }
 </script>
 
